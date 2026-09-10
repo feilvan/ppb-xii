@@ -1,3 +1,5 @@
+// app/index.tsx
+import { Link } from "expo-router";
 import { useState } from "react";
 import {
   Button,
@@ -32,6 +34,7 @@ export default function Index() {
           gap: 8,
         }}
       >
+        <Link href={"/profile"}>Halaman Profile</Link>
         <Text style={styles.judul}>View, Text, Image</Text>
         {/* Gambar pakai URL */}
         <Image
