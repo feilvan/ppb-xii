@@ -34,6 +34,7 @@ export default function Index() {
           gap: 8,
         }}
       >
+        <Link href={"/sqlite"}>sqlite</Link>
         <Link href={"/profile"}>Halaman Profile</Link>
         <Text style={styles.judul}>View, Text, Image</Text>
         {/* Gambar pakai URL */}
