@@ -19,6 +19,13 @@ export async function initializeDatabase(
       content TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS barang (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nama TEXT NOT NULL,
+      jumlah INTEGER NOT NULL,
+      harga REAL NOT NULL
+    );
   `);
 }
 
