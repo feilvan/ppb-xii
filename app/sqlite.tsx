@@ -160,7 +160,6 @@ export default function BarangScreen() {
 
       if (editId === id) resetForm();
     } catch {
-      // Alert.alert("Error", "Data barang gagal dihapus");
       setMsg("Data barang gagal dihapus");
     }
   }
@@ -229,25 +228,6 @@ export default function BarangScreen() {
         <Text style={styles.filterLabel}>
           Filter kategori
         </Text>
-        {/* <View style={styles.selectBox}>
-          <Text
-            style={
-              kategoriFilter
-                ? styles.selectText
-                : styles.placeholderText
-            }
-            onPress={() => {
-              if (kategoriOptions.length === 0) return;
-              const nextIndex =
-                (kategoriOptions.indexOf(kategoriFilter) +
-                  1) %
-                kategoriOptions.length;
-              setKategoriFilter(kategoriOptions[nextIndex]);
-            }}
-          >
-            {kategoriFilter || "Pilih kategori"}
-          </Text>
-        </View> */}
         {kategoriOptions.length > 0 && (
           <View style={styles.options}>
             <Button
