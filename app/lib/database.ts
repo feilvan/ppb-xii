@@ -24,9 +24,24 @@ export async function initializeDatabase(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nama TEXT NOT NULL,
       jumlah INTEGER NOT NULL,
-      harga REAL NOT NULL
+      harga REAL NOT NULL,
+      kategori TEXT NOT NULL DEFAULT 'Umum'
     );
   `);
+
+  const tableInfo = await db.getAllAsync<{ name: string }>(
+    "PRAGMA table_info(barang)",
+  );
+
+  const hasCategoryColumn = tableInfo.some(
+    (column) => column.name === "kategori",
+  );
+
+  if (!hasCategoryColumn) {
+    await db.execAsync(
+      "ALTER TABLE barang ADD COLUMN kategori TEXT NOT NULL DEFAULT 'Umum'",
+    );
+  }
 }
 
 export async function getNotes(

@@ -1,8 +1,9 @@
 import { useSQLiteContext } from "expo-sqlite";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,7 @@ interface Barang {
   nama: string;
   jumlah: number;
   harga: number;
+  kategori: string;
 }
 
 export default function BarangScreen() {
@@ -22,37 +24,70 @@ export default function BarangScreen() {
   const [nama, setNama] = useState<string>("");
   const [jumlah, setJumlah] = useState<string>("");
   const [harga, setHarga] = useState<string>("");
+  const [kategori, setKategori] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
+  const [kategoriFilter, setKategoriFilter] =
+    useState<string>("");
   const [barang, setBarang] = useState<Barang[]>([]);
   const [editId, setEditId] = useState<number | null>(null);
   const [msg, setMsg] = useState<string>("");
 
-  async function loadBarang(): Promise<void> {
-    const data = await db.getAllAsync<Barang>(
-      "SELECT * FROM barang ORDER BY id DESC",
-    );
-    setBarang(data);
-  }
+  const kategoriOptions = Array.from(
+    new Set(
+      barang
+        .map((item) => item.kategori.trim())
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const loadBarang =
+    useCallback(async (): Promise<void> => {
+      const data = await db.getAllAsync<Barang>(
+        "SELECT * FROM barang ORDER BY id DESC",
+      );
+      setBarang(data);
+    }, [db]);
 
   useEffect((): void => {
     loadBarang().catch(() =>
       // Alert.alert("Error", "Gagal memuat data barang"),
       setMsg("Gagal memuat data barang"),
     );
-  }, [db]);
+  }, [loadBarang]);
 
   function resetForm(): void {
     setNama("");
     setJumlah("");
     setHarga("");
+    setKategori("");
     setEditId(null);
   }
 
+  const filteredBarang = barang.filter((item) => {
+    const query = search.trim().toLowerCase();
+    const filterKategori = kategoriFilter
+      .trim()
+      .toLowerCase();
+
+    const matchesSearch =
+      query.length === 0 ||
+      item.nama.toLowerCase().includes(query) ||
+      item.kategori.toLowerCase().includes(query);
+
+    const matchesCategory =
+      filterKategori.length === 0 ||
+      item.kategori.toLowerCase() === filterKategori;
+
+    return matchesSearch && matchesCategory;
+  });
+
   async function simpanBarang(): Promise<void> {
     const n: string = nama.trim();
+    const k: string = kategori.trim();
     const j: number = Number(jumlah);
     const h: number = Number(harga);
 
-    if (!n || !jumlah.trim() || !harga.trim()) {
+    if (!n || !k || !jumlah.trim() || !harga.trim()) {
       // Alert.alert("Validasi", "Semua kolom wajib diisi");
       setMsg("Semua kolom wajib diisi");
       return;
@@ -77,17 +112,19 @@ export default function BarangScreen() {
     try {
       if (editId === null) {
         await db.runAsync(
-          "INSERT INTO barang (nama, jumlah, harga) VALUES (?, ?, ?)",
+          "INSERT INTO barang (nama, jumlah, harga, kategori) VALUES (?, ?, ?, ?)",
           n,
           j,
           h,
+          k,
         );
       } else {
         await db.runAsync(
-          "UPDATE barang SET nama = ?, jumlah = ?, harga = ? WHERE id = ?",
+          "UPDATE barang SET nama = ?, jumlah = ?, harga = ?, kategori = ? WHERE id = ?",
           n,
           j,
           h,
+          k,
           editId,
         );
       }
@@ -109,6 +146,7 @@ export default function BarangScreen() {
     setNama(item.nama);
     setJumlah(String(item.jumlah));
     setHarga(String(item.harga));
+    setKategori(item.kategori ?? "");
     setEditId(item.id);
   }
 
@@ -128,7 +166,7 @@ export default function BarangScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>
         {editId === null ? "Tambah Barang" : "Edit Barang"}
       </Text>
@@ -138,6 +176,13 @@ export default function BarangScreen() {
         placeholder="Nama barang"
         value={nama}
         onChangeText={setNama}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Kategori"
+        value={kategori}
+        onChangeText={setKategori}
       />
 
       <TextInput
@@ -173,12 +218,60 @@ export default function BarangScreen() {
 
       <Text style={styles.subtitle}>Daftar Barang</Text>
 
+      <TextInput
+        style={styles.input}
+        placeholder="Cari nama atau kategori"
+        value={search}
+        onChangeText={setSearch}
+      />
+
+      <View style={styles.filterWrap}>
+        <Text style={styles.filterLabel}>
+          Filter kategori
+        </Text>
+        {/* <View style={styles.selectBox}>
+          <Text
+            style={
+              kategoriFilter
+                ? styles.selectText
+                : styles.placeholderText
+            }
+            onPress={() => {
+              if (kategoriOptions.length === 0) return;
+              const nextIndex =
+                (kategoriOptions.indexOf(kategoriFilter) +
+                  1) %
+                kategoriOptions.length;
+              setKategoriFilter(kategoriOptions[nextIndex]);
+            }}
+          >
+            {kategoriFilter || "Pilih kategori"}
+          </Text>
+        </View> */}
+        {kategoriOptions.length > 0 && (
+          <View style={styles.options}>
+            <Button
+              title="Semua"
+              onPress={() => setKategoriFilter("")}
+            />
+            {kategoriOptions.map((option) => (
+              <Button
+                key={option}
+                title={option}
+                onPress={() => setKategoriFilter(option)}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+
       <FlatList
-        data={barang}
+        data={filteredBarang}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text>{item.nama}</Text>
+            <Text>Kategori: {item.kategori}</Text>
             <Text>Jumlah: {item.jumlah}</Text>
             <Text>Harga: Rp{item.harga}</Text>
 
@@ -193,10 +286,10 @@ export default function BarangScreen() {
           </View>
         )}
         ListEmptyComponent={
-          <Text>Belum ada data barang.</Text>
+          <Text>Belum ada data barang yang cocok.</Text>
         }
       />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -223,6 +316,32 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 10,
     marginBottom: 10,
+  },
+  filterWrap: {
+    marginBottom: 12,
+  },
+  filterLabel: {
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  selectBox: {
+    borderWidth: 1,
+    borderColor: "#999",
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+    backgroundColor: "#fff",
+  },
+  selectText: {
+    color: "#111",
+  },
+  placeholderText: {
+    color: "#888",
+  },
+  options: {
+    gap: 8,
+    display: "flex",
+    flexDirection: "row",
   },
   card: {
     padding: 12,
